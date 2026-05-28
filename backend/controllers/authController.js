@@ -144,6 +144,13 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Keep Stream user profile in sync on every login
+    await upsertStreamUser({
+      id: user._id.toString(),
+      name: user.name,
+      image: user.profileImage || "",
+    });
+
     const token = generateToken(user._id);
     setAuthCookie(res, token);
 

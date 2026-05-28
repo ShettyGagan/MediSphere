@@ -79,14 +79,14 @@ function guardInput(query) {
     if (q.length > 500) {
         return { blocked: true, reason: 'Query too long. Keep it under 500 characters.' };
     }
-    
+
     if (INJECTION_PATTERNS.some(p => p.test(q))) {
         return { blocked: true, reason: 'Invalid query.' };
     }
     if (OFF_TOPIC_PATTERNS.some(p => p.test(q))) {
         return { blocked: true, reason: 'I only answer medical questions.' };
     }
-    
+
     return { blocked: false };
 }
 
@@ -197,7 +197,7 @@ function hallucinationCheck(answer, topChunks) {
     return { passed: suspicious.length <= 2, suspicious };
 }
 
-// ─── Main Pipeline ────────────────────────────────────────────────────────────
+//  Main Pipeline 
 export async function ragQuery(query, patientId = null) {
     const trace = langfuse.trace({
         name: 'rag-query',
@@ -256,10 +256,10 @@ export async function ragQuery(query, patientId = null) {
         const { answer, usage } = await generate(prompt);
         generation.end({
             output: answer,
-            usage: { 
-                promptTokens: usage.prompt_tokens, 
-                completionTokens: usage.completion_tokens, 
-                totalTokens: usage.total_tokens 
+            usage: {
+                promptTokens: usage.prompt_tokens,
+                completionTokens: usage.completion_tokens,
+                totalTokens: usage.total_tokens
             },
             latencyMs: Date.now() - t3
         });

@@ -28,7 +28,7 @@ function createSectionChunks(row) {
         id: `${row.product_name}__overview`,
         section: 'overview',
         text: `Medicine: ${row.product_name}
-Category: ${row.sub_category}
+    Category: ${row.sub_category}
 Composition: ${row.salt_composition}
 Manufacturer: ${row.product_manufactured}
 Price: ${row.product_price}`,
