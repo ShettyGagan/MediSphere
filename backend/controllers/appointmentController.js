@@ -4,12 +4,12 @@ import Appointment from "../models/Appointment.js";
 import Payment from "../models/payment.js";
 import DoctorProfile from "../models/Doctor.js";
 import User from "../models/User.js";
+import Slot from "../models/Slot.js";
 import { createConsultationSession } from "./consultationController.js";
 import { ENV } from "../utils/env.js";
 
-/* =======================
-   CASHFREE HELPERS
-======================= */
+
+//  CASHFREE HELPERS
 
 const CASHFREE_BASE =
   ENV.CASHFREE_ENV === "production"
@@ -23,7 +23,7 @@ const cashfreeHeaders = {
   "Content-Type": "application/json",
 };
 
-/** Create a Cashfree order and return { cf_order_id, payment_session_id } */
+// Creating  a Cashfree order  
 const createCashfreeOrder = async ({ orderId, amount, patient }) => {
   const body = {
     order_id: orderId,
@@ -40,8 +40,8 @@ const createCashfreeOrder = async ({ orderId, amount, patient }) => {
     },
   };
 
-  console.log("🔵 Cashfree create order request:", JSON.stringify(body, null, 2));
-  console.log("🔵 Cashfree headers:", { "x-client-id": ENV.CASHFREE_APP_ID, "x-api-version": "2023-08-01" });
+  console.log("Cashfree create order request:", JSON.stringify(body, null, 2));
+  console.log("Cashfree headers:", { "x-client-id": ENV.CASHFREE_APP_ID, "x-api-version": "2023-08-01" });
 
   const response = await fetch(`${CASHFREE_BASE}/orders`, {
     method: "POST",
@@ -50,17 +50,17 @@ const createCashfreeOrder = async ({ orderId, amount, patient }) => {
   });
 
   const data = await response.json();
-  console.log("🔴 Cashfree response status:", response.status);
-  console.log("🔴 Cashfree response body:", JSON.stringify(data, null, 2));
+  console.log("Cashfree response status:", response.status);
+  console.log("Cashfree response body:", JSON.stringify(data, null, 2));
 
   if (!response.ok) {
     throw new Error(data.message || JSON.stringify(data) || "Failed to create Cashfree order");
   }
 
-  return data; // { cf_order_id, payment_session_id, order_status, ... }
+  return data;
 };
 
-/** Fetch Cashfree order status to verify payment */
+// Fetching Cashfree order status for payment verification 
 const getCashfreeOrderStatus = async (orderId) => {
   const response = await fetch(`${CASHFREE_BASE}/orders/${orderId}`, {
     method: "GET",
@@ -74,10 +74,10 @@ const getCashfreeOrderStatus = async (orderId) => {
     throw new Error(data.message || "Failed to fetch Cashfree order status");
   }
 
-  return data; // { order_status: "PAID" | "ACTIVE" | "EXPIRED", ... }
+  return data;
 };
 
-/** Get payments list for a Cashfree order */
+// Get payments list for a Cashfree order 
 const getCashfreePayments = async (orderId) => {
   const response = await fetch(`${CASHFREE_BASE}/orders/${orderId}/payments`, {
     method: "GET",
@@ -88,21 +88,18 @@ const getCashfreePayments = async (orderId) => {
   return Array.isArray(data) ? data : [];
 };
 
-/* =======================
-   POPULATE FIELDS
-======================= */
+// POPULATING FIELDS 
 const POPULATE_FIELDS = [
   { path: "patient_id", select: "name email profileImage phone" },
   { path: "doctor_id", select: "name email profileImage" },
 ];
 
-/* =======================
-   BOOK APPOINTMENT
-======================= */
+
+//booking appointment
 
 export const bookAppointment = async (req, res) => {
   try {
-    const { doctor_id, appointment_type, scheduled_at } = req.body;
+    const { doctor_id, appointment_type, scheduled_at, slot_id } = req.body;
     const patient_id = req.user._id;
 
     if (
@@ -123,18 +120,30 @@ export const bookAppointment = async (req, res) => {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    // Slot conflict protection
-    const existing = await Appointment.findOne({
-      doctor_id,
-      scheduled_at: scheduledDate,
-      status: { $nin: ["CANCELLED"] },
-    });
+    // validate free slot
+    let slot = null;
+    if (slot_id) {
+      slot = await Slot.findOne({
+        _id: slot_id,
+        doctor_id,
+        is_booked: false,
+      });
+      if (!slot) {
+        return res.status(409).json({ message: "This slot is no longer available" });
+      }
+    } else {
 
-    if (existing) {
-      return res.status(409).json({ message: "Time slot already booked" });
+      const existing = await Appointment.findOne({
+        doctor_id,
+        scheduled_at: scheduledDate,
+        status: { $nin: ["CANCELLED"] },
+      });
+      if (existing) {
+        return res.status(409).json({ message: "Time slot already booked" });
+      }
     }
 
-    // Fetch patient details for Cashfree customer info
+    // Fetching details of patient for Cashfree customer info
     const patient = await User.findById(patient_id).lean();
     if (!patient) {
       return res.status(404).json({ message: "Patient not found" });
@@ -150,7 +159,15 @@ export const bookAppointment = async (req, res) => {
       status: "PENDING",
     });
 
-    // Build a unique Cashfree order ID using appointment ID
+
+    if (slot) {
+      await Slot.findByIdAndUpdate(slot._id, {
+        is_booked: true,
+        appointment_id: appointment._id,
+      });
+    }
+
+    //  unique Cashfree order ID using appointment ID
     const cfOrderId = `health_${appointment._id}`;
 
     let cfOrder;
@@ -161,8 +178,11 @@ export const bookAppointment = async (req, res) => {
         patient,
       });
     } catch (cfErr) {
-      // Rollback appointment if payment order fails
+      // Rollback: delete the appointment AND release the slot 
       await Appointment.findByIdAndDelete(appointment._id);
+      if (slot) {
+        await Slot.findByIdAndUpdate(slot._id, { is_booked: false, appointment_id: null });
+      }
       return res.status(502).json({ message: `Payment gateway error: ${cfErr.message}` });
     }
 
@@ -194,9 +214,8 @@ export const bookAppointment = async (req, res) => {
   }
 };
 
-/* =======================
-   VERIFY PAYMENT
-======================= */
+
+// Verify Payment 
 
 export const verifyPayment = async (req, res) => {
   try {
@@ -252,7 +271,7 @@ export const verifyPayment = async (req, res) => {
     appointment.status = "CONFIRMED";
     await appointment.save();
 
-    // Create Stream video call for the consultation
+    // create stream video call 
     try {
       const callId = await createConsultationSession(appointment);
       appointment.stream_channel_id = callId;
@@ -277,9 +296,7 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
-/* =======================
-   GET MY APPOINTMENTS
-======================= */
+// GET MY APPOINTMENTS 
 
 export const getMyAppointments = async (req, res) => {
   try {
@@ -303,9 +320,7 @@ export const getMyAppointments = async (req, res) => {
   }
 };
 
-/* =======================
-   CANCEL APPOINTMENT
-======================= */
+// CANCEL APPOINTMENT 
 
 export const cancelAppointment = async (req, res) => {
   try {
@@ -337,9 +352,7 @@ export const cancelAppointment = async (req, res) => {
   }
 };
 
-/* =======================
-   GET UPCOMING APPOINTMENTS
-======================= */
+// GET UPCOMING APPOINTMENTS 
 
 export const getUpcomingAppointments = async (req, res) => {
   try {
@@ -362,9 +375,7 @@ export const getUpcomingAppointments = async (req, res) => {
   }
 };
 
-/* =======================
-   GET APPOINTMENT BY ID
-======================= */
+// GET APPOINTMENT BY ID 
 
 export const getAppointmentById = async (req, res) => {
   try {

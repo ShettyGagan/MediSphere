@@ -9,10 +9,10 @@ const router = express.Router();
 
 router.use(protect);
 
-// Join a scheduled video consultation
+// Join a video consultation
 router.get("/join/:appointmentId", joinConsultation);
 
-// End consultation (doctor only)
+// End consultation 
 router.post("/end/:appointmentId", restrictTo("DOCTOR"), endConsultation);
 
 export default router;

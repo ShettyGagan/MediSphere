@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 
-// ─── Markdown-lite renderer (bold, citations) ─────────────────────────────────
+// render  bold, citations
 function renderMessage(text) {
   let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\[(\d+)\]/g, '<sup class="chatbot-cite">[$1]</sup>');
@@ -30,7 +30,7 @@ export default function FloatingChatbot() {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
-  // Guard: only patients see the chatbot
+  // only patients see the chatbot
   if (!user || user.role?.toLowerCase() !== 'patient') return null;
 
   const handleOpen = () => {
@@ -75,7 +75,7 @@ export default function FloatingChatbot() {
 
   return (
     <>
-      {/* ── FAB Launcher ─────────────────────────────────────── */}
+      {/* FAB Launcher  */}
       <button
         id="chatbot-launcher"
         onClick={open ? () => setOpen(false) : handleOpen}
@@ -100,7 +100,7 @@ export default function FloatingChatbot() {
         )}
       </button>
 
-      {/* ── Chat Panel ───────────────────────────────────────── */}
+      {/* Chat Panel  */}
       <div
         id="chatbot-panel"
         className={`chatbot-panel${open ? ' chatbot-panel-open' : ''}`}

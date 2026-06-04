@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-// All routes require authentication
+// All protected routes `
 router.use(protect);
 
 // Doctor creates/updates prescription

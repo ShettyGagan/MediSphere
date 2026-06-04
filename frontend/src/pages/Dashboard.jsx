@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   Users,
-  Search
+  Search,
+  Clock
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,6 +25,7 @@ import Prescriptions from './dashboard/Prescriptions';
 import BookAppointment from './dashboard/BookAppointment';
 import ConsultationRoom from './dashboard/ConsultationRoom';
 import FindDoctors from './FindDoctors';
+import Availability from './dashboard/Availability';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -33,6 +35,7 @@ export default function Dashboard() {
   const navigation = user?.role === 'DOCTOR' ? [
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Patient schedule', href: '/dashboard/appointments', icon: Users },
+    { name: 'My Availability', href: '/dashboard/availability', icon: Clock },
     { name: 'Prescriptions', href: '/dashboard/prescriptions', icon: FileText },
   ] : [
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -162,6 +165,7 @@ export default function Dashboard() {
               <Route path="appointments/book" element={user.role === 'PATIENT' ? <BookAppointment /> : <Navigate to="/dashboard" />} />
               <Route path="consultation/:id" element={<ConsultationRoom />} />
               <Route path="prescriptions" element={<Prescriptions />} />
+              <Route path="availability" element={user.role === 'DOCTOR' ? <Availability /> : <Navigate to="/dashboard" />} />
            </Routes>
         </main>
       </div>

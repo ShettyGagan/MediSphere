@@ -1,9 +1,5 @@
 import { chatClient } from "../utils/stream.js";
 
-/**
- * Generate Stream token for authenticated user
- * Used by frontend to connect to Stream Chat/Video
- */
 export const getStreamToken = async (req, res) => {
   try {
     const userId = req.user._id.toString();

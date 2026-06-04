@@ -29,7 +29,10 @@ export default function Navbar() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             {(!user || user.role === 'PATIENT') && (
-              <Link to="/doctors" className="text-[14px] font-medium text-[#2e5e4a] hover:text-[#1a3d30] transition-colors">
+              <Link
+                to={user ? '/doctors' : '/login'}
+                className="text-[14px] font-medium text-[#2e5e4a] hover:text-[#1a3d30] transition-colors"
+              >
                 Find doctors
               </Link>
             )}
@@ -82,7 +85,7 @@ export default function Navbar() {
         <div className="md:hidden border-t border-[#c5e3d8] bg-white animate-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-6 flex flex-col gap-4">
             {(!user || user.role === 'PATIENT') && (
-              <Link to="/doctors" onClick={() => setIsOpen(false)} className="text-[14px] font-medium text-[#2e5e4a]">Find doctors</Link>
+              <Link to={user ? '/doctors' : '/login'} onClick={() => setIsOpen(false)} className="text-[14px] font-medium text-[#2e5e4a]">Find doctors</Link>
             )}
             {user ? (
               <>

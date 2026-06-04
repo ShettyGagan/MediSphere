@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use(protect);
 
-// List all doctors (with optional ?specialization= filter)
+// List all doctors
 router.get("/", getAllDoctors);
 
 // Get a specific doctor's profile

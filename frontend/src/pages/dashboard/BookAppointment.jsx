@@ -30,7 +30,9 @@ export default function BookAppointment() {
   const [error, setError] = useState('');
   const appointmentType = 'VIDEO';
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
     const fetchDoctor = async () => {
@@ -47,22 +49,40 @@ export default function BookAppointment() {
     if (doctorId) fetchDoctor();
   }, [doctorId]);
 
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!date || !doctorId) return;
+      setLoadingSlots(true);
+      try {
+        const res = await api.get(`/slots/available?doctorId=${doctorId}&date=${date}`);
+        setSlots(res.data.slots);
+      } catch (err) {
+        console.error('Failed to fetch slots:', err);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetchSlots();
+    setSelectedSlot(null);
+  }, [date, doctorId]);
+
   const handleBooking = async (e) => {
     e.preventDefault();
-    if (!date || !time) {
-      setError('Please select both a date and time.');
+    if (!date || !selectedSlot) {
+      setError('Please select both a date and an available time slot.');
       return;
     }
     setError('');
     setBooking(true);
 
     try {
-      // Step 1: Create appointment + Cashfree order on backend
-      const scheduledAt = new Date(`${date}T${time}`);
+      //Create appointment + Cashfree 
+      const scheduledAt = new Date(`${date}T${selectedSlot.start_time}`);
       const res = await api.post('/appointments/book', {
         doctor_id: doctorId,
         appointment_type: appointmentType,
         scheduled_at: scheduledAt.toISOString(),
+        slot_id: selectedSlot._id,
       });
 
       const { appointment, payment } = res.data;
@@ -155,12 +175,12 @@ export default function BookAppointment() {
               </div>
 
               {/* Date & Time */}
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-normal text-[#4a7a67] uppercase tracking-wider pl-1">
                     Preferred date
                   </label>
-                  <div className="relative">
+                  <div className="relative max-w-sm">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a7a67]" />
                     <input
                       type="date"
@@ -172,21 +192,55 @@ export default function BookAppointment() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-normal text-[#4a7a67] uppercase tracking-wider pl-1">
-                    Preferred time
-                  </label>
-                  <div className="relative">
-                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a7a67]" />
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      className="input-field pl-11 text-[14px]"
-                      required
-                    />
+
+                {date && (
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-normal text-[#4a7a67] uppercase tracking-wider pl-1">
+                      Available Time Slots
+                    </label>
+                    {loadingSlots ? (
+                      <div className="flex items-center gap-2 text-[#4a7a67] text-sm py-4">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading slots...
+                      </div>
+                    ) : slots.length === 0 ? (
+                      <div className="p-4 bg-white border border-[#c5e3d8] border-dashed rounded-lg text-center text-[#4a7a67] text-sm">
+                        No slots available for this date. Please select another date.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                        {slots.map((slot) => {
+                          const isSelected = selectedSlot?._id === slot._id;
+                          const isBooked = slot.is_booked;
+
+                          let cls = 'relative text-center px-2 py-2.5 rounded-lg text-[12px] font-semibold border transition-all select-none ';
+                          if (isBooked) {
+                            cls += 'bg-[#f0f7f4] border-[#c5e3d8] text-[#a0b3ac] cursor-not-allowed';
+                          } else if (isSelected) {
+                            cls += 'bg-[#2a7d5f] border-[#2a7d5f] text-white shadow-md shadow-[#2a7d5f]/20 cursor-pointer';
+                          } else {
+                            cls += 'bg-white border-[#c5e3d8] text-[#4a7a67] hover:border-[#2a7d5f] hover:bg-[#f0f7f4] cursor-pointer';
+                          }
+
+                          // Convert 24h to 12h for display
+                          const [h, m] = slot.start_time.split(':').map(Number);
+                          const ampm = h >= 12 ? 'PM' : 'AM';
+                          const displayTime = `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+
+                          return (
+                            <div
+                              key={slot._id}
+                              className={cls}
+                              onClick={() => !isBooked && setSelectedSlot(slot)}
+                            >
+                              {displayTime}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Summary & Pay Button */}
@@ -227,7 +281,7 @@ export default function BookAppointment() {
           </div>
         </section>
 
-        {/* ── Right – Doctor Card ── */}
+        {/* Right – Doctor Card */}
         <section className="md:col-span-2 order-1 md:order-2">
           <div className="bg-white border-[0.5px] border-[#c5e3d8] rounded-[10px] sticky top-28 overflow-hidden">
             <div className="aspect-[4/5] bg-[#f0f7f4] overflow-hidden relative group">
@@ -288,9 +342,9 @@ export default function BookAppointment() {
 }
 
 function Briefcase({ className, ...props }) {
-    return (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-        <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-      </svg>
-    );
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>
+  );
 }

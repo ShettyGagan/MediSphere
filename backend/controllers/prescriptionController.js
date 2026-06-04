@@ -1,10 +1,7 @@
 import Prescription from "../models/Prescription.js";
 import Appointment from "../models/Appointment.js";
 
-/**
- * Create prescription for a patient after consultation
- * Only the doctor of the appointment can create
- */
+// Create prescription for a patient 
 export const createPrescription = async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -30,7 +27,7 @@ export const createPrescription = async (req, res) => {
     // Check if prescription already exists
     const existingPrescription = await Prescription.findOne({ appointment_id: appointmentId });
     if (existingPrescription) {
-      return res.status(409).json({ 
+      return res.status(409).json({
         message: "Prescription already exists for this appointment",
         prescription: existingPrescription,
       });
@@ -78,10 +75,8 @@ export const createPrescription = async (req, res) => {
   }
 };
 
-/**
- * Update an existing prescription
- * Only the doctor who created it can update
- */
+// Update an existing prescription 
+
 export const updatePrescription = async (req, res) => {
   try {
     const { id } = req.params;
@@ -132,10 +127,7 @@ export const updatePrescription = async (req, res) => {
   }
 };
 
-/**
- * Get prescription by appointment ID
- * Both doctor and patient of the appointment can view
- */
+// Get prescription by appointment ID
 export const getPrescriptionByAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -172,14 +164,14 @@ export const getPrescriptionByAppointment = async (req, res) => {
 };
 
 /**
- * Get all prescriptions for the logged-in patient
+ * Get all prescriptions for patient
  */
 export const getMyPrescriptions = async (req, res) => {
   try {
     const userId = req.user._id;
 
     // Build query based on role
-    const query = req.user.role === "DOCTOR" 
+    const query = req.user.role === "DOCTOR"
       ? { doctor_id: userId }
       : { patient_id: userId };
 
@@ -231,7 +223,6 @@ export const getPrescriptionById = async (req, res) => {
 
 /**
  * Delete a prescription
- * Only the doctor who created it can delete
  */
 export const deletePrescription = async (req, res) => {
   try {

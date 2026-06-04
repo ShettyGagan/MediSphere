@@ -1,9 +1,6 @@
 import DoctorProfile from "../models/Doctor.js";
 
-/**
- * Get all doctors with their profile info
- * Patients use this to browse and book appointments
- */
+// Get all doctors with their profile info 
 export const getAllDoctors = async (req, res) => {
   try {
     const { specialization } = req.query;
@@ -24,9 +21,7 @@ export const getAllDoctors = async (req, res) => {
   }
 };
 
-/**
- * Get a single doctor's profile by their user ID
- */
+// Get a doctor's profile by their user ID 
 export const getDoctorById = async (req, res) => {
   try {
     const doctor = await DoctorProfile.findOne({ user_id: req.params.id })

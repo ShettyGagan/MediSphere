@@ -11,10 +11,10 @@ import {
 
 const router = express.Router();
 
-// All routes require authentication
+// All protected routes 
 router.use(protect);
 
-// Book appointment & payment (patients only)
+// Book appointment & payment 
 router.post("/book", restrictTo("PATIENT"), bookAppointment);
 router.post("/verify-payment", restrictTo("PATIENT"), verifyPayment);
 

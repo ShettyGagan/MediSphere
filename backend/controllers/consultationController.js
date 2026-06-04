@@ -6,11 +6,7 @@ const POPULATE_FIELDS = [
   { path: "doctor_id", select: "name email profileImage" },
 ];
 
-/**
- * Create a scheduled consultation session after payment is verified.
- * Always creates BOTH a Stream video call AND a Stream chat channel.
- * The video callId is stored in appointment.stream_channel_id.
- */
+
 export const createConsultationSession = async (appointment) => {
   const callId = `consultation_${appointment._id}`;
   const chatChannelId = `chat_${appointment._id}`;
@@ -30,7 +26,7 @@ export const createConsultationSession = async (appointment) => {
     },
   });
 
-  // Create Stream chat channel (server-side so members have permission)
+  // Create Stream chat channel 
   const channel = chatClient.channel("messaging", chatChannelId, {
     name: "Consultation Chat",
     created_by_id: appointment.doctor_id.toString(),
@@ -45,10 +41,7 @@ export const createConsultationSession = async (appointment) => {
   return callId;
 };
 
-/**
- * Join consultation — returns the callId and chatChannelId so the frontend
- * can connect to both the video call and chat channel via Stream SDK.
- */
+
 export const joinConsultation = async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -76,7 +69,6 @@ export const joinConsultation = async (req, res) => {
       return res.status(400).json({ message: "Session not yet created for this appointment" });
     }
 
-    // Ensure chat channel always exists (idempotent — safe to call on every join)
     const chatChannelId = `chat_${appointmentId}`;
     const chatChannel = chatClient.channel("messaging", chatChannelId, {
       name: "Consultation Chat",
@@ -102,9 +94,9 @@ export const joinConsultation = async (req, res) => {
 };
 
 
-/**
- * End consultation — only the doctor can end the session.
- */
+
+//End consultation 
+
 export const endConsultation = async (req, res) => {
   try {
     const { appointmentId } = req.params;

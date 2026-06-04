@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { generatePrescriptionContent } from './prescriptionPdfTemplate';
+import html2pdf from 'html2pdf.js';
 import {
    FileText,
    User,
@@ -45,6 +47,31 @@ export default function Prescriptions() {
    useEffect(() => {
       fetchPrescriptions();
    }, []);
+
+   const handleSavePdf = () => {
+      if (!selectedPrescription) return;
+      const p = selectedPrescription;
+      const filename = `Prescription_${p.patient_id.name.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.pdf`;
+
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed;top:0;left:0;width:794px;visibility:hidden;z-index:-9999;';
+      wrapper.innerHTML = generatePrescriptionContent(p);
+      document.body.appendChild(wrapper);
+
+      const target = wrapper.firstElementChild || wrapper;
+
+      html2pdf()
+         .set({
+            margin: 0,
+            filename,
+            html2canvas: { scale: 2, useCORS: true, logging: false, width: 794 },
+            jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+         })
+         .from(target)
+         .save()
+         .finally(() => document.body.removeChild(wrapper));
+   };
+
 
    const filteredPrescriptions = prescriptions.filter(p =>
       p.patient_id.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -164,7 +191,7 @@ export default function Prescriptions() {
                )}
             </div>
 
-            {/* Prescription detail viewer (Bottom drawer or expansion) */}
+            {/* Prescription detail viewer  */}
             {selectedPrescription && (
                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-surface-950/40 backdrop-blur-sm animate-in fade-in duration-300">
                   <div className="w-full max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-12 duration-500 border border-surface-200">
@@ -256,7 +283,7 @@ export default function Prescriptions() {
                      </div>
 
                      <footer className="p-8 border-t border-surface-100 flex items-center justify-end gap-4 bg-surface-50/50">
-                        <button className="btn-secondary py-3.5 px-8 font-bold flex items-center gap-2 active:scale-95 transition-transform">
+                        <button onClick={handleSavePdf} className="btn-secondary py-3.5 px-8 font-bold flex items-center gap-2 active:scale-95 transition-transform">
                            <Download size={18} strokeWidth={2.5} /> Save PDF
                         </button>
                         <button onClick={() => setSelectedPrescription(null)} className="btn-primary py-3.5 px-10 font-bold active:scale-95 transition-transform bg-surface-900 border-surface-950 hover:bg-surface-950 shadow-none">
@@ -269,7 +296,7 @@ export default function Prescriptions() {
          </div>
       </div>
    );
-}
+};
 
 function X({ className, ...props }) {
    return (
@@ -278,3 +305,5 @@ function X({ className, ...props }) {
       </svg>
    );
 }
+
+

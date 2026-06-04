@@ -7,6 +7,7 @@ import {
   CallControls,
   ParticipantView,
   useCallStateHooks,
+  hasVideo,
 } from '@stream-io/video-react-sdk';
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 import { StreamChat } from 'stream-chat';
@@ -62,8 +63,8 @@ export default function ConsultationRoom() {
           api.get('/chat/token'),
         ]);
 
-        // Video client
-        activeVideoClient = new StreamVideoClient({
+        // Video client 
+        activeVideoClient = StreamVideoClient.getOrCreateInstance({
           apiKey,
           user: { id: user._id, name: user.name, image: user.profileImage },
           token: tokenRes.data.token,
@@ -71,8 +72,17 @@ export default function ConsultationRoom() {
         activeCall = activeVideoClient.call('default', consultRes.data.callId);
         await activeCall.join({ create: true });
 
-        // Chat client — connect to the server-created channel (avoids 403)
-        activeChatClient = StreamChat.getInstance(apiKey);
+        // Auto-enable camera and mic on join
+        try {
+          await activeCall.camera.enable();
+          await activeCall.microphone.enable();
+        } catch (mediaErr) {
+          console.warn('Could not automatically enable camera/mic:', mediaErr);
+        }
+
+        // Chat client 
+        // Setting a 15-second timeout 
+        activeChatClient = StreamChat.getInstance(apiKey, { timeout: 15000 });
         if (activeChatClient.userID !== tokenRes.data.userId) {
           await activeChatClient.connectUser(
             { id: tokenRes.data.userId, name: tokenRes.data.userName, image: tokenRes.data.userImage },
@@ -80,7 +90,7 @@ export default function ConsultationRoom() {
           );
         }
 
-        // Use the chatChannelId returned by the backend (channel was pre-created server-side)
+        // Use the chatChannelId from backend 
         const ch = activeChatClient.channel('messaging', consultRes.data.chatChannelId);
         await ch.watch();
 
@@ -102,9 +112,9 @@ export default function ConsultationRoom() {
 
     return () => {
       const cleanup = async () => {
-        if (activeCall) { try { await activeCall.leave(); } catch (e) {} }
-        if (activeVideoClient) { try { await activeVideoClient.disconnectUser(); } catch (e) {} }
-        if (activeChatClient) { try { await activeChatClient.disconnectUser(); } catch (e) {} }
+        if (activeCall) { try { await activeCall.leave(); } catch (e) { } }
+        if (activeVideoClient) { try { await activeVideoClient.disconnectUser(); } catch (e) { } }
+        if (activeChatClient) { try { await activeChatClient.disconnectUser(); } catch (e) { } }
       };
       cleanup();
     };
@@ -164,7 +174,7 @@ export default function ConsultationRoom() {
         </div>
       </header>
 
-      {/* ── Main: Video (left) + Chat (right) ── */}
+      {/* Video (left) + Chat (right) */}
       <div className="flex-1 flex overflow-hidden">
 
         {/* Video Panel */}
@@ -233,7 +243,7 @@ export default function ConsultationRoom() {
   );
 }
 
-/* ── Video Layout ── */
+/* Video Layout  */
 const MyVideoLayout = () => {
   const { useParticipants } = useCallStateHooks();
   const allParticipants = useParticipants();
@@ -243,44 +253,91 @@ const MyVideoLayout = () => {
     return acc;
   }, []);
 
-  return (
-    <div className="h-full p-4 pb-2">
-      <div className={`grid gap-4 h-full ${participants.length === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
-        {participants.map((p) => (
-          <div key={p.sessionId} className="relative rounded-2xl overflow-hidden bg-gray-900 border border-white/10 shadow-2xl">
-            <ParticipantView participant={p} />
-            <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 z-20">
-              <p className="text-white font-bold text-xs flex items-center gap-2">
-                <span className={`w-1.5 h-1.5 rounded-full ${p.isLocalParticipant ? 'bg-brand-500' : 'bg-indigo-400'}`} />
-                {p.name || 'Anonymous'} {p.isLocalParticipant && '(You)'}
-              </p>
-            </div>
-            {!p.videoStream && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
-                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center border border-white/5">
-                  <UserIcon size={48} className="text-gray-600" />
+  const local = participants.find(p => p.isLocalParticipant);
+  const remote = participants.find(p => !p.isLocalParticipant);
+
+  /* Solo / waiting screen  */
+  if (!remote) {
+    return (
+      <div className="relative h-full w-full bg-gray-950 overflow-hidden">
+        {local && (
+          <div className="absolute inset-0">
+            <ParticipantView participant={local} />
+            {!hasVideo(local) && (
+              <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
+                <div className="w-28 h-28 rounded-full bg-gray-800 flex items-center justify-center border border-white/10">
+                  <UserIcon size={56} className="text-gray-600" />
                 </div>
-                <p className="mt-4 text-white/30 font-bold text-[10px] uppercase tracking-widest">Camera Off</p>
               </div>
             )}
           </div>
-        ))}
-
-        {participants.length === 1 && (
-          <div className="hidden lg:flex flex-col items-center justify-center rounded-2xl bg-gray-900/40 border-2 border-dashed border-white/10 p-8 text-center">
-            <div className="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mb-4">
-              <Loader2 size={32} className="text-brand-500 animate-[spin_3s_linear_infinite]" />
+        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/55 backdrop-blur-sm">
+          <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mb-5 border border-white/20">
+            <Loader2 size={40} className="text-white animate-[spin_3s_linear_infinite]" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2">Waiting for the other party…</h3>
+          <p className="text-white/50 text-sm">The secure channel is ready.</p>
+          {local && (
+            <div className="absolute bottom-5 left-5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 z-30">
+              <p className="text-white font-semibold text-xs flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                {local.name || 'You'} (You)
+              </p>
             </div>
-            <h3 className="text-lg font-bold text-white mb-1">Waiting for other party</h3>
-            <p className="text-white/30 text-sm font-medium">Secure channel is ready</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /*  remote fullscreen, local PiP bottom-right  */
+  return (
+    <div className="relative h-full w-full bg-black overflow-hidden">
+
+      {/* Remote  */}
+      <div className="absolute inset-0">
+        <ParticipantView participant={remote} />
+        {!hasVideo(remote) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
+            <div className="w-36 h-36 rounded-full bg-gray-800 flex items-center justify-center border border-white/10">
+              <UserIcon size={64} className="text-gray-600" />
+            </div>
+            <p className="mt-5 text-white/30 font-bold text-xs uppercase tracking-widest">Camera Off</p>
           </div>
         )}
+        {/* Remote name */}
+        <div className="absolute bottom-5 left-5 z-20 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+          <p className="text-white font-semibold text-xs flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+            {remote.name || 'Guest'}
+          </p>
+        </div>
       </div>
+
+      {/* Local — PiP tile, bottom-right */}
+      {local && (
+        <div className="absolute bottom-5 right-5 z-30 w-44 h-28 sm:w-56 sm:h-36 rounded-2xl overflow-hidden border-2 border-white/25 shadow-2xl shadow-black/70 bg-gray-900">
+          <ParticipantView participant={local} />
+          {!hasVideo(local) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+              <UserIcon size={28} className="text-gray-600" />
+            </div>
+          )}
+          <div className="absolute bottom-1.5 left-2 z-20">
+            <p className="text-white/80 font-semibold text-[10px] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              {local.name || 'You'} (You)
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-/* ── Prescription Modal ── */
+
+/*  Prescription Modal */
 const PrescriptionFormModal = ({ onClose, appointmentId }) => {
   const [formData, setFormData] = useState({
     diagnosis: '',
