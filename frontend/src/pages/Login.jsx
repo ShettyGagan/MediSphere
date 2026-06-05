@@ -110,7 +110,7 @@ export default function Login() {
             </div>
 
             <a
-              href={`${API_URL}/api/auth/google`}
+              href={`${API_URL}/auth/google`}
               className="btn-secondary w-full py-3 flex items-center justify-center gap-3 font-medium text-[14px]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

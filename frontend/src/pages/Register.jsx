@@ -65,8 +65,8 @@ export default function Register() {
           <button
             onClick={() => { setRole('PATIENT'); setError(''); }}
             className={`p-6 rounded-xl border-[0.5px] transition-all text-left relative ${role === 'PATIENT'
-                ? 'border-[#2a7d5f] bg-white'
-                : 'border-[#c5e3d8] bg-white/50 hover:bg-white'
+              ? 'border-[#2a7d5f] bg-white'
+              : 'border-[#c5e3d8] bg-white/50 hover:bg-white'
               }`}
           >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${role === 'PATIENT' ? 'bg-[#f0f7f4] text-[#2a7d5f]' : 'bg-[#e2f0eb] text-[#4a7a67]'
@@ -81,8 +81,8 @@ export default function Register() {
           <button
             onClick={() => { setRole('DOCTOR'); setError(''); }}
             className={`p-6 rounded-xl border-[0.5px] transition-all text-left relative ${role === 'DOCTOR'
-                ? 'border-[#2a7d5f] bg-white'
-                : 'border-[#c5e3d8] bg-white/50 hover:bg-white'
+              ? 'border-[#2a7d5f] bg-white'
+              : 'border-[#c5e3d8] bg-white/50 hover:bg-white'
               }`}
           >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${role === 'DOCTOR' ? 'bg-[#f0f7f4] text-[#2a7d5f]' : 'bg-[#e2f0eb] text-[#4a7a67]'
@@ -246,7 +246,7 @@ export default function Register() {
               </div>
 
               <a
-                href={`${API_URL}/api/auth/google`}
+                href={`${API_URL}/auth/google`}
                 className="btn-secondary w-full py-3.5 flex items-center justify-center gap-3 font-medium text-[14px]"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
