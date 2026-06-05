@@ -19,9 +19,10 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ENV.CLIENT_URL || "http://localhost:3000",
+  origin: ENV.CLIENT_URL,
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());

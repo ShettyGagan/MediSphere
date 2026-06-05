@@ -11,6 +11,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -48,7 +50,7 @@ export default function Login() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
               <label className="text-[11px] font-normal text-[#4a7a67] uppercase tracking-wider pl-1">Email address</label>
               <div className="relative">
@@ -108,7 +110,7 @@ export default function Login() {
             </div>
 
             <a
-              href="http://localhost:5000/api/auth/google"
+              href={`${API_URL}/api/auth/google`}
               className="btn-secondary w-full py-3 flex items-center justify-center gap-3 font-medium text-[14px]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
