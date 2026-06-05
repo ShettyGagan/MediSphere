@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import DoctorProfile from "../models/Doctor.js";
 import { generateToken } from "../utils/jwt.js";
 import { upsertStreamUser } from "../utils/stream.js";
-import { setAuthCookie } from "../utils/cookies.js";
+import { setAuthCookie, clearAuthCookie } from "../utils/cookies.js";
 import { ENV } from "../utils/env.js";
 
 // Helper: Finalize registration (Stream + Token + Response)
@@ -189,7 +189,7 @@ export const googleAuthSuccess = async (req, res) => {
 // Logout
 
 export const logout = (req, res) => {
-  res.clearCookie("token");
+  clearAuthCookie(res);
   res.json({ message: "Logged out successfully" });
 };
 
