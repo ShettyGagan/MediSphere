@@ -2,9 +2,21 @@ import dotenv from "dotenv";
 
 dotenv.config({ quiet: true });
 
+const NODE_ENV = process.env.NODE_ENV || "development";
+const IS_DEV = NODE_ENV === "development";
+const IS_PROD = NODE_ENV === "production";
+
+// In development use LOCAL_DB_URL (local MongoDB); in production use DB_URL (Atlas).
+const resolvedDbUrl = IS_DEV
+  ? (process.env.LOCAL_DB_URL || process.env.DB_URL)
+  : process.env.DB_URL;
+
 export const ENV = {
+  NODE_ENV,
+  IS_DEV,
+  IS_PROD,
   PORT: process.env.PORT,
-  DB_URL: process.env.DB_URL,
+  DB_URL: resolvedDbUrl,
   CLIENT_URL: process.env.CLIENT_URL,
   STREAM_API_KEY: process.env.STREAM_API_KEY,
   STREAM_API_SECRET: process.env.STREAM_API_SECRET,

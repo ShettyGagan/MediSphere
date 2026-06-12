@@ -38,6 +38,8 @@ export default function ConsultationRoom() {
   const [loading, setLoading] = useState(true);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [ending, setEnding] = useState(false);
+  // Mobile tab: 'video' | 'chat'
+  const [activeTab, setActiveTab] = useState('video');
 
   const handleEndConsultation = async () => {
     if (!window.confirm('End this consultation? The appointment will be marked as completed.')) return;
@@ -132,53 +134,55 @@ export default function ConsultationRoom() {
   return (
     <div className="h-screen flex flex-col bg-gray-950 overflow-hidden fixed inset-0 z-[100]">
       {/* ── Header ── */}
-      <header className="flex items-center justify-between px-6 py-3 bg-gray-900/95 border-b border-white/10 shrink-0 z-20">
-        <div className="flex items-center gap-4">
-          <div className="bg-brand-500 p-2 rounded-xl shadow-lg shadow-brand-500/20">
-            <Video className="text-white w-5 h-5" />
+      <header className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3 bg-gray-900/95 border-b border-white/10 shrink-0 z-20 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="bg-brand-500 p-1.5 sm:p-2 rounded-xl shadow-lg shadow-brand-500/20 shrink-0">
+            <Video className="text-white w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <h2 className="text-white font-bold text-base leading-tight">Live Consultation</h2>
-            <div className="flex items-center gap-2 mt-0.5">
+          <div className="min-w-0">
+            <h2 className="text-white font-bold text-sm sm:text-base leading-tight truncate">Live Consultation</h2>
+            <div className="hidden sm:flex items-center gap-2 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Encrypted & Secure</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {user.role === 'DOCTOR' && (
             <>
               <button
                 onClick={() => setShowPrescriptionModal(true)}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 text-sm active:scale-95"
+                className="px-2 sm:px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm active:scale-95"
               >
-                <PlusSquare size={15} /> Add Prescription
+                <PlusSquare size={15} />
+                <span className="hidden sm:inline">Add Prescription</span>
               </button>
               <button
                 onClick={handleEndConsultation}
                 disabled={ending}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center gap-2 text-sm active:scale-95"
+                className="px-2 sm:px-5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm active:scale-95"
               >
                 {ending ? <Loader2 size={15} className="animate-spin" /> : <PhoneOff size={15} />}
-                End Consultation
+                <span className="hidden sm:inline">End Consultation</span>
               </button>
             </>
           )}
           <button
             onClick={() => navigate('/dashboard/appointments')}
-            className="p-2.5 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-transparent group"
+            className="p-2 sm:p-2.5 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-transparent group"
           >
-            <XCircle size={20} className="group-hover:scale-110 transition-transform" />
+            <XCircle size={18} className="group-hover:scale-110 transition-transform" />
           </button>
         </div>
       </header>
 
-      {/* Video (left) + Chat (right) */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Body: Video + Chat  */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
-        {/* Video Panel */}
-        <div className="flex-1 flex flex-col bg-gray-950 overflow-hidden relative">
+        {/* Video Panel — full on desktop; shown on mobile only when activeTab==='video' */}
+        <div className={`flex-1 flex flex-col bg-gray-950 overflow-hidden relative
+          ${activeTab === 'video' ? 'flex' : 'hidden md:flex'}`}>
           {videoClient && call ? (
             <StreamVideo client={videoClient}>
               <StreamCall call={call}>
@@ -187,8 +191,8 @@ export default function ConsultationRoom() {
                     <MyVideoLayout />
                   </div>
                   {/* Floating controls */}
-                  <div className="flex justify-center py-4 shrink-0 bg-gradient-to-t from-gray-950/90 to-transparent">
-                    <div className="bg-white/10 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-white/10 shadow-2xl">
+                  <div className="flex justify-center py-3 sm:py-4 shrink-0 bg-gradient-to-t from-gray-950/90 to-transparent">
+                    <div className="bg-white/10 backdrop-blur-2xl px-4 sm:px-6 py-2 sm:py-3 rounded-[2rem] border border-white/10 shadow-2xl">
                       <CallControls onLeave={() => navigate('/dashboard/appointments')} />
                     </div>
                   </div>
@@ -203,7 +207,10 @@ export default function ConsultationRoom() {
         </div>
 
         {/* Chat Panel */}
-        <div className="w-72 xl:w-80 border-l border-white/10 flex flex-col bg-gray-900 shrink-0">
+        <div className={`
+          md:w-72 xl:w-80 md:shrink-0 border-l border-white/10 flex flex-col bg-gray-900
+          ${activeTab === 'chat' ? 'flex flex-1' : 'hidden md:flex'}
+        `}>
           {/* Chat header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center">
@@ -216,7 +223,7 @@ export default function ConsultationRoom() {
           </div>
 
           {/* Stream Chat */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {chatClient && channel ? (
               <Chat client={chatClient} theme="messaging dark">
                 <Channel channel={channel}>
@@ -233,6 +240,26 @@ export default function ConsultationRoom() {
             )}
           </div>
         </div>
+      </div>
+
+      {/*  Mobile Tab Bar */}
+      <div className="md:hidden flex shrink-0 border-t border-white/10 bg-gray-900">
+        <button
+          onClick={() => setActiveTab('video')}
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-colors
+            ${activeTab === 'video' ? 'text-brand-400 border-t-2 border-brand-400' : 'text-white/40'}`}
+        >
+          <Video size={18} />
+          Video
+        </button>
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-colors
+            ${activeTab === 'chat' ? 'text-indigo-400 border-t-2 border-indigo-400' : 'text-white/40'}`}
+        >
+          <MessageSquare size={18} />
+          Chat
+        </button>
       </div>
 
       {/* Prescription Modal */}
