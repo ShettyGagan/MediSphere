@@ -95,7 +95,7 @@ export const cancelAppointment = handle(async (req, res) => {
     appointmentId: req.params.id,
     userId: req.user._id
   })
-  return res.json({ message: "Cancelled successfully", appointment });
+  return res.json({ message: "Cancelled successfully", appointment: result });
 
 });
 

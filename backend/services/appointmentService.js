@@ -4,6 +4,7 @@ import Payment from "../models/payment.js";
 import User from "../models/User.js";
 import DoctorProfile from "../models/Doctor.js";
 import Slot from "../models/Slot.js";
+import DoctorWallet from "../models/DoctorWallet.js";
 import { createCashfreeOrder, getCashfreeOrder, getCashfreePayments } from "../utils/cashfree.js";
 import { createConsultationSession } from "../controllers/consultationController.js";
 
@@ -155,6 +156,19 @@ export const confirmPayment = async ({ cfOrderId, userId }) => {
 
     appointment.status = "CONFIRMED";
     await appointment.save();
+
+    // ── Credit the doctor's wallet ──────────────────────────────────────────
+    // Use $inc + upsert so the wallet is auto-created on first payment.
+    await DoctorWallet.findOneAndUpdate(
+        { doctor_id: appointment.doctor_id },
+        {
+            $inc: {
+                available_balance: pendingPayment.amount,
+                total_earned:      pendingPayment.amount,
+            },
+        },
+        { upsert: true }
+    );
 
     try {
         const callId = await createConsultationSession(appointment);

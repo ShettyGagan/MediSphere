@@ -1,12 +1,12 @@
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  FileText, 
-  Settings, 
-  ChevronRight, 
-  Bell, 
+import {
+  LayoutDashboard,
+  Calendar,
+  FileText,
+  Settings,
+  ChevronRight,
+  Bell,
   User as UserIcon,
   Video,
   LogOut,
@@ -14,7 +14,8 @@ import {
   X,
   Users,
   Search,
-  Clock
+  Clock,
+  Banknote,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,6 +27,7 @@ import BookAppointment from './dashboard/BookAppointment';
 import ConsultationRoom from './dashboard/ConsultationRoom';
 import FindDoctors from './FindDoctors';
 import Availability from './dashboard/Availability';
+import Payouts from './dashboard/Payouts';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -33,10 +35,11 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = user?.role === 'DOCTOR' ? [
-    { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Patient schedule', href: '/dashboard/appointments', icon: Users },
-    { name: 'My Availability', href: '/dashboard/availability', icon: Clock },
-    { name: 'Prescriptions', href: '/dashboard/prescriptions', icon: FileText },
+    { name: 'Overview',         href: '/dashboard',              icon: LayoutDashboard },
+    { name: 'Patient schedule', href: '/dashboard/appointments', icon: Users           },
+    { name: 'My Availability',  href: '/dashboard/availability', icon: Clock           },
+    { name: 'Prescriptions',    href: '/dashboard/prescriptions',icon: FileText        },
+    { name: 'Payouts',          href: '/dashboard/payouts',      icon: Banknote        },
   ] : [
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Find doctors', href: '/dashboard/doctors', icon: Search },
@@ -55,7 +58,7 @@ export default function Dashboard() {
     <div className="flex-1 flex h-screen overflow-hidden bg-[#f0f7f4]">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-[#1a3d30]/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -88,8 +91,8 @@ export default function Dashboard() {
                   to={item.href}
                   className={`
                     flex items-center gap-3 px-4 py-3 transition-all group border-l-[3px]
-                    ${active 
-                      ? 'bg-[#f0f7f4] text-[#1a3d30] border-[#2a7d5f] font-semibold' 
+                    ${active
+                      ? 'bg-[#f0f7f4] text-[#1a3d30] border-[#2a7d5f] font-semibold'
                       : 'text-[#2e5e4a] hover:bg-[#f0f7f4] border-transparent font-medium'}
                   `}
                 >
@@ -102,26 +105,26 @@ export default function Dashboard() {
           </nav>
 
           <div className="pt-6 border-t border-[#c5e3d8] mt-auto">
-             <div className="flex items-center gap-3 px-2 mb-6">
-                {user.profileImage ? (
-                  <img src={user.profileImage} alt="Profile" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-[#c5e3d8] flex items-center justify-center shrink-0">
-                    <span className="text-[14px] font-semibold text-[#1a3d30]">{user.name.charAt(0).toUpperCase()}</span>
-                  </div>
-                )}
-                <div className="min-w-0 overflow-hidden">
-                   <p className="text-[14px] font-medium text-[#1a3d30] truncate">{user.name}</p>
-                   <p className="text-[11px] text-[#4a7a67] font-normal">{user.role.toLowerCase()}</p>
+            <div className="flex items-center gap-3 px-2 mb-6">
+              {user.profileImage ? (
+                <img src={user.profileImage} alt="Profile" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-[#c5e3d8] flex items-center justify-center shrink-0">
+                  <span className="text-[14px] font-semibold text-[#1a3d30]">{user.name.charAt(0).toUpperCase()}</span>
                 </div>
-             </div>
-             <button 
+              )}
+              <div className="min-w-0 overflow-hidden">
+                <p className="text-[14px] font-medium text-[#1a3d30] truncate">{user.name}</p>
+                <p className="text-[11px] text-[#4a7a67] font-normal">{user.role.toLowerCase()}</p>
+              </div>
+            </div>
+            <button
               onClick={logout}
               className="flex items-center gap-3 w-full px-4 py-3 font-medium text-[#4a7a67] hover:text-red-500 hover:bg-[#f0f7f4] rounded-lg transition-colors text-[14px] group"
-             >
-                <LogOut className="w-5 h-5 group-hover:text-red-500" />
-                Logout
-             </button>
+            >
+              <LogOut className="w-5 h-5 group-hover:text-red-500" />
+              Logout
+            </button>
           </div>
         </div>
       </aside>
@@ -129,44 +132,45 @@ export default function Dashboard() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <header className="h-20 shrink-0 relative z-30 bg-white/80 backdrop-blur-md border-b border-[#c5e3d8] flex items-center justify-between px-8">
-           <div className="flex items-center gap-4 lg:hidden">
-              <button 
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg border border-[#c5e3d8] text-[#4a7a67] hover:bg-[#f0f7f4]"
-              >
-                 <Menu className="w-5 h-5" />
-              </button>
-           </div>
-           
-           <div className="hidden sm:block">
-              <h2 className="text-[20px] font-semibold text-[#1a3d30]">
-                 Good morning, {user.name.split(' ')[0]}
-              </h2>
-              <p className="text-[13px] text-[#4a7a67] font-normal mt-0.5">
-                {today} · All clear today
-              </p>
-           </div>
+          <div className="flex items-center gap-4 lg:hidden">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg border border-[#c5e3d8] text-[#4a7a67] hover:bg-[#f0f7f4]"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
 
-           <div className="flex items-center gap-3">
-              <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#c5e3d8] text-[#4a7a67] hover:bg-[#e2f0eb] transition-all">
-                 <Bell className="w-5 h-5" />
-              </button>
-              <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#c5e3d8] text-[#4a7a67] hover:bg-[#e2f0eb] transition-all">
-                 <Settings className="w-5 h-5" />
-              </button>
-           </div>
+          <div className="hidden sm:block">
+            <h2 className="text-[20px] font-semibold text-[#1a3d30]">
+              Good morning, {user.name.split(' ')[0]}
+            </h2>
+            <p className="text-[13px] text-[#4a7a67] font-normal mt-0.5">
+              {today} · All clear today
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#c5e3d8] text-[#4a7a67] hover:bg-[#e2f0eb] transition-all">
+              <Bell className="w-5 h-5" />
+            </button>
+            <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#c5e3d8] text-[#4a7a67] hover:bg-[#e2f0eb] transition-all">
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 p-6 overflow-auto">
-           <Routes>
-              <Route index element={<Overview />} />
-              <Route path="doctors" element={<FindDoctors />} />
-              <Route path="appointments" element={<MyAppointments />} />
-              <Route path="appointments/book" element={user.role === 'PATIENT' ? <BookAppointment /> : <Navigate to="/dashboard" />} />
-              <Route path="consultation/:id" element={<ConsultationRoom />} />
-              <Route path="prescriptions" element={<Prescriptions />} />
-              <Route path="availability" element={user.role === 'DOCTOR' ? <Availability /> : <Navigate to="/dashboard" />} />
-           </Routes>
+          <Routes>
+            <Route index element={<Overview />} />
+            <Route path="doctors" element={<FindDoctors />} />
+            <Route path="appointments" element={<MyAppointments />} />
+            <Route path="appointments/book" element={user.role === 'PATIENT' ? <BookAppointment /> : <Navigate to="/dashboard" />} />
+            <Route path="consultation/:id" element={<ConsultationRoom />} />
+            <Route path="prescriptions" element={<Prescriptions />} />
+            <Route path="availability" element={user.role === 'DOCTOR' ? <Availability /> : <Navigate to="/dashboard" />} />
+            <Route path="payouts" element={user.role === 'DOCTOR' ? <Payouts /> : <Navigate to="/dashboard" />} />
+          </Routes>
         </main>
       </div>
     </div>

@@ -31,10 +31,52 @@ const INJECTION_PATTERNS = [
 ];
 
 const OFF_TOPIC_PATTERNS = [
+    // Creative / entertainment
     /write.*poem/i,
     /tell.*joke/i,
+    /write.*story/i,
+    /write.*essay/i,
+    /write.*song/i,
+    /\blyrics\b/i,
+    /\bfiction\b/i,
+
+    // Cooking & lifestyle
     /recipe for/i,
-    /weather/i
+    /how to cook/i,
+    /how to bake/i,
+    /\bcalories in\b/i,
+
+    // Weather & environment
+    /weather/i,
+    /temperature today/i,
+    /will it rain/i,
+
+    // Programming & technology
+    /\bcode\b.*\b(function|class|loop|script|algorithm)\b/i,
+    /\b(javascript|python|java|c\+\+|typescript|html|css|react|node|sql|php|rust|golang|kotlin|swift)\b/i,
+    /how to (program|code|debug|compile|build|deploy|install)/i,
+    /write a (function|class|script|program|api|component|query)/i,
+    /\b(git|github|docker|kubernetes|linux|terminal|bash|powershell|npm|pip)\b/i,
+    /\b(machine learning|deep learning|neural network|llm|gpt|ai model)\b/i,
+
+    // Math & science (non-medical)
+    /solve (this )?(equation|math|problem|integral|derivative)/i,
+    /\b(calculus|algebra|geometry|trigonometry|statistics|physics|chemistry(?! related to medicine))\b/i,
+    /\b(fibonacci|prime number|binary search|sorting algorithm)\b/i,
+
+    // History, politics & geography
+    /\b(history of|who was|who is the president|capital of|population of)\b/i,
+    /\b(world war|cold war|civil war|political party|election)\b/i,
+
+    // Sports & entertainment
+    /\b(football|cricket|basketball|soccer|tennis|sports score|movie|netflix|streaming)\b/i,
+    /recommend (a |me a )?(movie|show|book|game|song|playlist)/i,
+
+    // Finance & economics (non-medical cost)
+    /\b(stock market|crypto|bitcoin|forex|invest|portfolio|trading)\b/i,
+
+    // Travel
+    /\b(flight|hotel|travel|vacation|tourist|visa|passport)\b/i
 ];
 
 // Common terms exempt from hallucination checks
@@ -141,18 +183,33 @@ function buildPrompt(query, topChunks) {
         .join('\n\n---\n\n');
 
     return {
-        system: `You are HealthConnect's medical information assistant.
-Answer questions about medications using ONLY the provided context.
+        system: `You are MediSphere's dedicated medical information assistant. Your ONLY purpose is to answer questions related to:
+- Medications (uses, dosages, side effects, interactions, alternatives, prices)
+- Medical conditions and symptoms
+- Health and wellness advice grounded in medical knowledge
+- Appointments, consultations, or MediSphere platform questions
 
-CITATION RULES (mandatory):
+━━━ STRICT SCOPE ENFORCEMENT ━━━
+If the user's question is NOT related to medicine, health, medications, or the MediSphere platform, you MUST respond with ONLY this exact message and nothing else:
+"I'm MediSphere's medical assistant and can only help with health and medication-related questions. Please consult a doctor or rephrase your question about a medical topic."
+Do NOT attempt to answer off-topic questions under any circumstances — not even partially.
+
+━━━ CITATION RULES (mandatory for all medical answers) ━━━
 - After every factual claim, add a citation like [1], [2], or [3] referencing the source number.
 - Example: "Metformin is used to treat diabetes [1]. Common side effects include nausea [2]."
-- Never state facts without a citation.
+- Never state a medical fact without a citation from the provided context.
 
-SAFETY RULES:
-- If the context doesn't contain the answer, say exactly: "I don't have verified information about that."
-- Never suggest dosages without a doctor consultation note.
-- Always end with the disclaimer if the question involves dosage, diagnosis, or interactions.
+━━━ SAFETY RULES ━━━
+- Base your answer ONLY on the provided context. Do NOT use prior training knowledge to fill gaps.
+- If the context does not contain the answer, respond with: "I don't have verified information about that in my current knowledge base. Please consult your doctor."
+- Never suggest specific dosages without adding a doctor consultation note.
+- Always append the medical disclaimer when the question involves dosage, diagnosis, or drug interactions.
+- Do NOT speculate, fabricate, or extrapolate beyond what the context explicitly states.
+
+━━━ TONE & FORMAT ━━━
+- Be empathetic, clear, and professional.
+- Use bullet points for lists of side effects or steps.
+- Keep responses concise (under 300 words) unless a detailed explanation is medically necessary.
 
 Context:
 ${context}`,
@@ -273,6 +330,25 @@ export async function ragQuery(query, patientId = null) {
         const DISCLAIMER = "\n\n⚕️ *Please consult your doctor before making any changes to your medication.*";
         const finalAnswer = answer.includes('consult your doctor') ? answer : answer + DISCLAIMER;
 
+        const REFUSAL_PHRASES = [
+            'can only help with health',
+            "don't have verified information",
+            "couldn't find relevant information",
+            'consult a doctor or rephrase',
+        ];
+
+        const isRefusal = REFUSAL_PHRASES.some(p =>
+            answer.toLowerCase().includes(p.toLowerCase())
+        );
+
+        if (isRefusal) {
+            await langfuse.flushAsync();
+            return {
+                answer,          // the refusal message as-is
+                citations: [],   // ← empty, nothing leaked
+                traceId: trace.id,
+            };
+        }
         // Build structured citations
         const citations = topChunks.map((c, i) => ({
             index: i + 1,

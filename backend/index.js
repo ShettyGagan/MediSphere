@@ -14,6 +14,7 @@ import prescriptionRoutes from "./routes/prescriptionRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import slotRoutes from "./routes/slotRoutes.js";
+import payoutRoutes from "./routes/payoutRoutes.js";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/slots", slotRoutes);
+app.use("/api/payouts", payoutRoutes);
 
 // Health check
 app.get("/health", (_, res) => {
