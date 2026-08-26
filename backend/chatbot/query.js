@@ -20,7 +20,7 @@ const langfuse = new Langfuse({
 });
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const GROQ_MODEL = 'llama-3.1-8b-instant';
+const GROQ_MODEL = 'openai/gpt-oss-20b';
 
 // Pre-compiled regex patterns for input guardrails
 const INJECTION_PATTERNS = [
